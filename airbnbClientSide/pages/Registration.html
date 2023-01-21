@@ -1,0 +1,320 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>User Registration</title>
+    <link href="../css/RegistrationStyleSheet.css" rel="stylesheet" />
+    <link href="../css/StyleSheet.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+
+    <script src="https://code.jquery.com/jquery-3.6.1.min.js"
+            integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ="
+            crossorigin="anonymous"></script>
+
+    <script src="../js/ajaxCalls.js"></script>
+
+    <script>
+
+        $(document).ready(function () {
+            if (sessionStorage.getItem("User") != undefined) {
+                SSuser = JSON.parse(sessionStorage.getItem("User"));
+                console.log(SSuser);
+                showUpdate();
+                $("#logoutIcon").show();
+                $("#loginIcon").hide();
+                if (SSuser.isAdmin == true)
+                    $("#adminIcon").show();
+                else
+                    $("#adminIcon").hide();
+            }
+            else {
+                $("#adminIcon").hide();
+                $("#loginIcon").show();
+                $("#logoutIcon").hide();
+            }
+            show();   
+        })
+
+        function show() {
+            document.getElementById("ph").innerHTML = '<button type="button" class="btn" onclick="postUser()">Login</button>';
+            if (sessionStorage.getItem("User") != undefined) {
+                document.getElementById('ph2').innerHTML = '<a style="text-align:center" onclick="showUpdate()">Update Details</a>';
+            }
+            else {
+                str = '<h1 id="welcome"><span>Registration</span></h1>';
+                str += '<p><span>Register in order to order a vacation</span></p>';
+                document.getElementById('page-Title').innerHTML = str;
+            }
+        }
+
+        function showUpdate() {
+            document.getElementById('page-Title').innerHTML = '<h1 id="welcome"><span>Update Details</span></h1>';
+            document.getElementById("ph").innerHTML = '<button type="button" class="btn" onclick="updateUser()">Update</button>';
+            var ssUser = JSON.parse(sessionStorage.getItem("User"));
+            $('#email').val(ssUser.email);
+        }
+
+        function postUser() {
+            var user = CreateUser();
+            if (location.hostname == "localhost") {
+                api = "https://localhost:7041/api/Users";
+            }
+            else {
+                api = "https://proj.ruppin.ac.il/cgroup30/test2/tar1/api/Users";
+            }
+            ajaxCall("POST", api, JSON.stringify(user), postSCB, postECB);
+
+        }
+
+        function CreateUser() {
+            var FirstName = $('#firstName').val();
+            var LastName = $('#lastName').val();
+            var Email = $('#email').val();
+            var Password = $('#password').val();
+
+            var user = {
+                firstName: FirstName,
+                lastName: LastName,
+                email: Email,
+                password: Password
+            }
+            return user;
+        }
+
+        function postSCB(data) {
+            console.log(data);
+            var user = CreateUser();
+            $('#firstName').val('');
+            $('#lastName').val('');
+            $("#email").val('');
+            $("#password").val('');
+            if (data == 1) {
+                sessionStorage.setItem("User", JSON.stringify(user));
+                show();
+            }
+            else
+                alert("An error occured, user not added");
+        }
+
+        function postECB(err) {
+            alert("An error occured, user not added");
+            $('#firstName').val('');
+            $('#lastName').val('');
+            $("#email").val('');
+            $("#password").val('');
+        }
+
+        function updateUser() {
+            var user = CreateUser();
+            ajaxCall("PUT", api, JSON.stringify(user), putSCB, putECB);
+        }
+
+        function putSCB(data) {
+            console.log(data);
+            var user = CreateUser();
+            $('#firstName').val('');
+            $('#lastName').val('');
+            $("#email").val('');
+            $("#password").val('');
+            if (data == 1) {
+                sessionStorage.setItem("User", JSON.stringify(user));
+                showUpdate();
+            }
+            else
+                alert("An error occured, user not added");
+        }
+
+
+        function putECB(err) {
+            alert("An error occured, user not added");
+            $('#firstName').val('');
+            $('#lastName').val('');
+            $("#email").val('');
+            $("#password").val('');
+        }
+
+        function ShowLogoutModal() {
+            var modal = document.getElementById("myModal");
+            modal.style.display = "block";
+            document.getElementById("modalHeader").innerHTML = "<span>LOGOUT</span>";
+            str = '<a id="insertUser" type="button" class="btn" onclick="LogoutkUser()">Logout</a>';
+            str += '<br />'
+            str += '<a href="Registration.html"> Update Details </a>'
+            document.getElementById("ph5").innerHTML = str;
+
+        }
+
+        function LogoutkUser() {
+            sessionStorage.clear();
+            CloseModal();
+        }
+
+        function ShowLoginModal() {
+            var modal = document.getElementById("myModal");
+            document.getElementById("modalHeader").innerHTML = "<span>LOGIN</span>";
+            modal.style.display = "block";
+            str = "<div>"
+            str += '<div data-validate="Valid user Email is required">'
+            str += "<p><b>Email</b></p>"
+            str += '<input type="email" id="your_Email" name="userEmail" required>'
+            str += '</div>'
+            str += '<div data-validate="Valid user Password is required">'
+            str += "<p><b>Password</b></p>"
+            str += '<input type="password" id="your_pass" name="userPassword" required>'
+            str += '</div>'
+            str += '</div>'
+            document.getElementById("ph4").innerHTML = str;
+            email = $("#your_Email").val();
+            pass = $("#your_pass").val();
+            str = '<a id="insertUser" type="button" class="btn" onclick="CheckUser()">Login</a>';
+            str += '<br />'
+            str += '<a href="Registration.html"> Not A Member </a>'
+            document.getElementById("ph5").innerHTML = str;
+
+        }
+
+        function CloseModal() {
+            var modal = document.getElementById("myModal");
+            modal.style.display = "none";
+            location.reload();
+        }
+
+        function CheckUser() {
+            var email = $("#your_Email").val();
+            var password = $("#your_pass").val();
+            if (location.hostname == "localhost") {
+                api = "https://localhost:7041/api/Users?email=" + email + "&password=" + password + "";
+            }
+            else {
+                api = "https://proj.ruppin.ac.il/cgroup30/test2/tar1/api/Users" + email + "&password=" + password + "";
+            }
+            ajaxCall("GET", api, "", getUserSCB, getUserECB);
+        }
+
+        function getUserSCB(data) {
+            if (data[0] != undefined) {
+                console.log(data[0]);
+                if (data[0].isActive == 1) {
+                    var user = {
+                        email: data[0].email,
+                        password: data[0].password,
+                        firstName: data[0].firstName,
+                        lastName: data[0].lastName,
+                        isAdmin: data[0].isAdmin
+                    };
+                    sessionStorage.setItem("User", JSON.stringify(user));
+                    SSuser = JSON.parse(sessionStorage.getItem("User"));
+                    alert("Hello " + user.firstName + ", good to see you again!");
+                    CloseModal();
+                }
+                else if (data[0].isActive == 0) {
+                    alert("Sorry, user is not active!");
+                }
+            }
+            else {
+                alert("User not found, Please Register");
+                $("#your_Email").val('');
+                $("#your_pass").val('');
+            }
+        }
+
+        function getUserECB(err) {
+            console.log(err);
+        }
+
+    </script>
+
+</head>
+<body>
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="headerBackground col col-12">
+                    <div id="icons" class='headerBackground'>
+                        <a id="adminIcon" href="Admin.html"><i class='material-icons' style='color: #FF385C; margin: 15px; float: right; background-color: #f7f7f7'>settings</i></a>
+                        <a href="flats.html"><i class='material-icons' style='color: #FF385C; margin: 15px; float: right; background-color: #f7f7f7'>home</i></a>
+                        <a id="loginIcon" onclick="ShowLoginModal()"><i class='material-icons' style='color: #FF385C; margin: 15px; float: right; background-color: #f7f7f7'>person</i></a>
+                        <a id="logoutIcon" onclick="ShowLogoutModal()"><i class='material-icons' style='color: #FF385C; margin: 15px; float: right; background-color: #f7f7f7'>person</i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="heading" id="welcome-headline">
+        <div>
+            <p></p>
+        </div>
+        <div id="page-Title">
+
+        </div>
+    </div>
+
+    <div class="hero-wrep">
+    </div>
+
+    <div>
+        <p></p>
+    </div>
+
+    <form>
+        <!-- First name field -->
+        <label for="firstName">First Name:</label><br>
+        <input type="text" id="firstName" name="firstName" required><br>
+        <!-- Last name field -->
+        <label for="lastName">Last Name:</label><br>
+        <input type="text" id="lastName" name="lastName" required><br>
+        <!-- Email field -->
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" required><br>
+        <!-- Password field -->
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" required><br>
+        <!-- Submit button -->
+        <div id="ph">
+
+        </div>
+
+
+    </form>
+    <br />
+    <div id="ph2">
+
+    </div>
+    <div>
+        <p></p>
+    </div>
+
+    <div class="container">
+
+        <!--The Modal-->
+        <div class="modal" id="myModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+
+                    <!--Modal Header-->
+                    <div class="modal-header">
+                        <br />
+                        <h4 id="modalHeader"  class="heading"></h4>
+                        <button type="button" class="close" data-dismiss="modal" onclick="CloseModal()">&times;</button>
+                    </div>
+
+                    <!--Modal body-->
+                    <div class="modal-body">
+                        <div id="ph4"></div>
+                    </div>
+
+                    <!--Modal footer-->
+                    <div class="modal-footer">
+                        <div id="ph5"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

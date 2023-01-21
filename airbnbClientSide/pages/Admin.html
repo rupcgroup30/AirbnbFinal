@@ -1,0 +1,342 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+
+
+    <!-- font awesome cdn link  -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+
+
+    <script src="https://code.jquery.com/jquery-3.6.1.min.js"
+            integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ="
+            crossorigin="anonymous"></script>
+
+    <script src="../js/ajaxCalls.js"></script>
+
+
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css">
+
+    <style type="text/css">
+
+        button {
+            margin-left: 10px;
+        }
+    </style>
+
+
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+    <link href="../css/StyleSheet.css" rel="stylesheet" />
+
+    <link href="../css/RegistrationStyleSheet.css" rel="stylesheet" />
+
+    <script>
+
+        var Users = new Array();
+        var AvgPricePerCity = new Array();
+
+
+        $(document).ready(function () {
+            $("#pForm").hide();
+            $("#hForm").hide();
+        })
+
+        function checkBoxEvent() {
+
+
+            $(document).on("change", ".isActiveCbx", function () {
+                //markSelected(this);
+                var isChecked = $(this).is(":checked");
+                var row = $(this).closest("tr");
+                var rowData = $(row).find("td");
+                user = {
+                    firstName: rowData[0].textContent,
+                    lastName: rowData[1].textContent,
+                    email: rowData[2].textContent,
+                    password: rowData[3].textContent,
+                    isActive: isChecked
+                }
+
+                SaveUser(user);
+            });
+        }
+
+        function SaveUser(user) {
+            if (location.hostname == "localhost") {
+                apiPutUser = "https://localhost:7041/api/Users";
+            }
+            else {
+                apiPutUser = "https://proj.ruppin.ac.il/cgroup30/test2/tar1/api/Users";
+            }
+            ajaxCall("PUT", apiPutUser, JSON.stringify(user), putSCB, putECB);
+        }
+
+        function putSCB(data) {
+            console.log(data);
+            if (data == 1) {
+                if (data[0].isActive == true)
+                    alert(data[0].firstName + "is activated");
+                else
+                    alert(data[0].firstName + "is not active");
+            }
+            else
+                alert("An error occured, didnt update user");
+        }
+
+
+        function putECB(err) {
+            alert("An error occured, user not added");
+        }
+
+        function getUsers() {
+            if (location.hostname == "localhost") {
+                api = "https://localhost:7041/GetAllUsers";
+            }
+            else {
+                api = 'https://proj.ruppin.ac.il/cgroup30/test2/tar1/GetAllUsers';
+            }
+            ajaxCall("GET", api, "", getUserSCB, getUserECB);
+        }
+
+        function getUserSCB(usersdata) {
+            $("#pForm").show();
+            console.log(usersdata);
+            Users = usersdata;
+            console.log(Users);
+            try {
+                tbl = $('#usersTable').DataTable({
+                    data: usersdata,
+                    pageLength: 5,
+                    columns: [
+                        { data: "firstName" },
+                        { data: "lastName" },
+                        { data: "email" },
+                        { data: "password" },
+                        {
+                            data: "isActive",
+                            render: function (data, type, row, meta) {
+                                if (data == true)
+                                    return '<input type="checkbox" class="isActiveCbx" checked />';
+                                else
+                                    return '<input type="checkbox" class="isActiveCbx" />';
+                            }
+                        }
+                    ],
+                });
+                checkBoxEvent();
+            }
+            catch (err) {
+                alert(err);
+            }
+        };
+
+        function getUserECB(err) {
+            console.log(err);
+        }
+
+        function CreateReport() {
+            const month = $("#MonthCB").val();
+            if (month != "") {
+                if (location.hostname == "localhost") {
+                    api = "https://localhost:7041/api/Vacations/GetAvgPrice?month=" + month;
+                }
+                else {
+                    api = 'https://proj.ruppin.ac.il/cgroup30/test2/tar1/api/Vacations/GetAvgPrice?month=' + month;
+                }
+                ajaxCall("GET", api, "", getSCB, getECB);
+            }
+            else
+                alert("Please choose month!")
+        }
+
+        function getSCB(Avgdata) {
+            $('#AvgTable td').remove();
+            $("#hForm").show();
+            console.log(Avgdata);
+            AvgPricePerCity = Avgdata;
+            console.log(AvgPricePerCity);
+
+            try {
+                let tableBody = document.querySelector("#AvgTable tbody");
+                for (let i = 0; i < Avgdata.length; i++) {
+                    let row = tableBody.insertRow();
+                    let cityCell = row.insertCell();
+                    let priceCell = row.insertCell();
+                    cityCell.innerHTML = Avgdata[i].city;
+                    priceCell.innerHTML = Avgdata[i].price;
+                }
+            } catch (err) {
+                alert(err);
+            }
+
+        }
+
+        function getECB(err) {
+            console.log(err);
+        }
+
+        function ShowLogoutModal() {
+            var modal = document.getElementById("myModal");
+            modal.style.display = "block";
+            str = '<a id="insertUser" type="button" class="btn" onclick="LogoutkUser()">Logout</a>';
+            str += '<br />'
+            str += '<a href="Registration.html"> Update Details </a>'
+            document.getElementById("ph5").innerHTML = str;
+
+        }
+
+        function LogoutkUser() {
+            sessionStorage.clear();
+            CloseModal();
+        }
+
+
+        function CloseModal() {
+            var modal = document.getElementById("myModal");
+            modal.style.display = "none";
+            window.location.replace("flats.html");
+        }
+
+        function Close() {
+            document.getElementById("myModal").style.display = "none";
+        }
+
+
+    </script>
+
+
+
+</head>
+<body>
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="headerBackground col col-12">
+                    <div class='headerBackground'>
+                        <a id="adminIcon" href="Admin.html"><i class='material-icons' style='color: #FF385C; margin: 15px; float: right; background-color: #f7f7f7'>settings</i></a>
+                        <a href="flats.html"><i class='material-icons' style='color: #FF385C; margin: 15px; float: right; background-color: #f7f7f7'>home</i></a>
+                        <a id="logoutIcon" onclick="ShowLogoutModal()"><i class='material-icons' style='color: #FF385C; margin: 15px; float: right; background-color: #f7f7f7'>person</i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="heading" id="welcome-headline">
+        <div>
+            <p></p>
+        </div>
+        <h1 id="welcome"><span>Welcome!</span></h1>
+        <!--<p><span>Here you can search for any type of flats you want</span></p>-->
+    </div>
+
+    <div class="hero-wrep">
+    </div>
+
+    <div>
+        <p></p>
+    </div>
+    <section class="featured" id="featured">
+        <div class="box-container" id="ph"></div>
+        <button class="button" onclick="getUsers()">Watch Users</button>
+    </section>
+
+    <div class="container">
+        <form id="pForm">
+            <table id="usersTable" class="display nowrap" style="width:100%; color:black">
+                <thead>
+                    <tr>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th>Password</th>
+                        <th>Is Active</th>
+                    </tr>
+                </thead>
+            </table>
+        </form>
+    </div>
+    <section class="featured" id="featured">
+        <div class="box-container"></div>
+        <h4><label><b>Select month</b></label></h4>
+        <select id="MonthCB" required>
+            <option value="">Choose month</option>
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+        </select>
+        <button class="button" onclick="CreateReport()">Create Report</button>
+    </section>
+
+    <div class="container">
+        <form id="hForm">
+            <table id="AvgTable" class="display nowrap" style="width:100%; color:black">
+                <thead>
+                    <tr>
+                        <th>City</th>
+                        <th>Average price for night</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </form>
+    </div>
+
+    <div class="container">
+
+        <!--The Modal-->
+        <div class="modal" id="myModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+
+                    <!--Modal Header-->
+                    <div class="modal-header">
+                        <br />
+                        <h4 class="heading"><span>LOGOUT</span></h4>
+                        <button type="button" class="close" data-dismiss="modal" onclick="Close()">&times;</button>
+                    </div>
+
+                    <!--Modal body-->
+                    <div class="modal-body">
+                        <div id="ph4"></div>
+                    </div>
+
+                    <!--Modal footer-->
+                    <div class="modal-footer">
+                        <div id="ph5"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
